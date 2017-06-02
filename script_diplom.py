@@ -69,25 +69,20 @@ def list_to_string(items):
 # функция возвращает множество групп пользователя,
 # в которых не состоит ни один из его друзей
 def unique_groups_set(groups, friends):
-    unique_groups = set()
-    groups_count = len(groups)
+    unique_groups = groups
     params['user_ids'] = list_to_string(friends)
     for group in groups:
         params['group_id'] = group
         # информация о том, является ли пользователь участником сообщества
         response = requests.post('https://api.vk.com/method/groups.isMember', params)
         time.sleep(0.5)
-        groups_count -= 1
         for item in response.json():
             if 'error' not in item:
-                print('группа {}, осталось проверить {} групп из {}'
-                      .format(group, groups_count, len(groups))
+                print('проверяем группу {}'.format(group)
                       )
                 for item in response.json()['response']:
-                    if item['member'] == 0:
-                        unique_groups.add(group)
-                    else:
-                        if item['member'] in unique_groups:
+                    if item['member'] == 1:
+                        if group in unique_groups:
                             unique_groups.remove(group)
     return unique_groups
 
@@ -118,11 +113,12 @@ def сheck_friends_number(user_groups, user_friends):
         divide_user_friends = divide_items_into_parts(user_friends)
         count_friends = len(user_friends)
         composite_unique_groups_set = set()
-        for item in divide_user_friends:
+        for divide_user_item in divide_user_friends:
             print('осталось проверить {} друзей из {}'.format(count_friends, len(user_friends)))
-            count_friends -= len(item)
-            for item in unique_groups_set(user_groups, item):
-                composite_unique_groups_set.add(item)
+            count_friends -= len(divide_user_item)
+            divide_unique_groups_set = unique_groups_set(user_groups, divide_user_item)
+            for user_groups_item in divide_unique_groups_set:
+                composite_unique_groups_set.add(user_groups_item)
     else:
         composite_unique_groups_set = unique_groups_set(user_groups, user_friends)
     return composite_unique_groups_set
