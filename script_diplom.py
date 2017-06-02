@@ -87,7 +87,8 @@ def unique_groups_set(groups, friends):
                     if item['member'] == 0:
                         unique_groups.add(group)
                     else:
-                        pass
+                        if item['member'] in unique_groups:
+                            unique_groups.remove(group)
     return unique_groups
 
 
