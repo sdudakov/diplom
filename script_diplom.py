@@ -31,9 +31,10 @@ params = {'access_token': 'd13e692be69592b09fd22c77a590dd34e186e6d696daa88d6d981
 
 # функция возвращает список групп пользователя
 def groups_list(user_id):
-    params['user_id'] = user_id
+    params_groups_list = params.copy()
+    params_groups_list['user_id'] = user_id
     # список групп пользователя
-    response = requests.get('https://api.vk.com/method/groups.get', params)
+    response = requests.get('https://api.vk.com/method/groups.get', params_groups_list)
     for item in response.json():
         if 'error' not in item:
             groups = response.json()['response']['items']
@@ -45,9 +46,9 @@ def groups_list(user_id):
 
 # функция возвращает список друзей пользователя
 def friends_list(user_id):
-    params['user_id'] = user_id
-    # список друзей
-    response = requests.get('https://api.vk.com/method/friends.get', params)
+    params_friends_list = params.copy()
+    params_friends_list['user_id'] = user_id
+    response = requests.get('https://api.vk.com/method/friends.get', params_friends_list)
     friends = response.json()['response']['items']
     return friends
 
@@ -69,12 +70,13 @@ def list_to_string(items):
 # функция возвращает множество групп пользователя,
 # в которых не состоит ни один из его друзей
 def unique_groups_set(groups, friends):
-    unique_groups = groups
-    params['user_ids'] = list_to_string(friends)
+    unique_groups = groups.copy()
+    params_unique_groups_set = params.copy()
+    params_unique_groups_set['user_ids'] = list_to_string(friends)
     for group in groups:
-        params['group_id'] = group
+        params_unique_groups_set['group_id'] = group
         # информация о том, является ли пользователь участником сообщества
-        response = requests.post('https://api.vk.com/method/groups.isMember', params)
+        response = requests.post('https://api.vk.com/method/groups.isMember', params_unique_groups_set)
         time.sleep(0.5)
         for item in response.json():
             if 'error' not in item:
@@ -85,26 +87,6 @@ def unique_groups_set(groups, friends):
                         if group in unique_groups:
                             unique_groups.remove(group)
     return unique_groups
-
-
-# функция записывает информацию о группах в файл формата json
-def write_groups_to_json(groups):
-    params['fields'] = 'members_count'
-    params['group_ids'] = list_to_string(groups)
-    groups_list = []
-    # информация о группе
-    response = requests.post('https://api.vk.com/method/groups.getById', params)
-    for response in response.json()['response']:
-        if 'deactivated' not in response:
-            groups_dict = {'name': response['name'],
-                           'gid': response['id'],
-                           'members_count': response['members_count']
-                           }
-            groups_list.append(groups_dict)
-    print('Данные о группах пишем в файл groups.json')
-    with open('groups.json', mode='w', encoding='utf-8') as file:
-        json.dump(groups_list, file, ensure_ascii=False, indent=2)
-    return 0
 
 
 # функция проверяет количество друзей у пользователя для соблюдения ограничений ВК
@@ -124,10 +106,30 @@ def сheck_friends_number(user_groups, user_friends):
     return composite_unique_groups_set
 
 
+# функция записывает информацию о группах в файл формата json
+def write_groups_to_json(groups):
+    params_write_groups_to_json = params.copy()
+    params_write_groups_to_json['fields'] = 'members_count'
+    params_write_groups_to_json['group_ids'] = list_to_string(groups)
+    write_groups_list = []
+    # информация о группе
+    response = requests.post('https://api.vk.com/method/groups.getById', params_write_groups_to_json)
+    for response in response.json()['response']:
+        if 'deactivated' not in response:
+            groups_dict = {'name': response['name'],
+                           'gid': response['id'],
+                           'members_count': response['members_count']
+                           }
+            write_groups_list.append(groups_dict)
+    print('Данные о группах пишем в файл groups.json')
+    with open('groups.json', mode='w', encoding='utf-8') as file:
+        json.dump(write_groups_list, file, ensure_ascii=False, indent=2)
+    return 0
+
 user_id = 5030613
 # user_id = 'tim_leary'
 
 user_groups = groups_list(user_id)
 user_friends = friends_list(user_id)
-unique_groups = сheck_friends_number(user_groups, user_friends)
-write_groups_to_json(unique_groups)
+user_unique_groups = сheck_friends_number(user_groups, user_friends)
+write_groups_to_json(user_unique_groups)
