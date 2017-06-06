@@ -72,38 +72,39 @@ def list_to_string(items):
 def unique_groups_set(groups, friends):
     unique_groups = groups.copy()
     params_unique_groups_set = params.copy()
-    params_unique_groups_set['user_ids'] = list_to_string(friends)
-    for group in groups:
-        params_unique_groups_set['group_id'] = group
-        # информация о том, является ли пользователь участником сообщества
-        response = requests.post('https://api.vk.com/method/groups.isMember', params_unique_groups_set)
-        time.sleep(0.5)
-        for item in response.json():
-            if 'error' not in item:
-                print('проверяем группу {}'.format(group)
-                      )
-                for item in response.json()['response']:
-                    if item['member'] == 1:
-                        if group in unique_groups:
-                            unique_groups.remove(group)
-    return unique_groups
-
-
-# функция проверяет количество друзей у пользователя для соблюдения ограничений ВК
-def сheck_friends_number(user_groups, user_friends):
-    if len(user_friends) > 500:
-        divide_user_friends = divide_items_into_parts(user_friends)
-        count_friends = len(user_friends)
-        composite_unique_groups_set = set()
+    if len(friends) > 500:
+        divide_user_friends = divide_items_into_parts(friends)
+        count_friends = len(friends)
         for divide_user_item in divide_user_friends:
             print('осталось проверить {} друзей из {}'.format(count_friends, len(user_friends)))
             count_friends -= len(divide_user_item)
-            divide_unique_groups_set = unique_groups_set(user_groups, divide_user_item)
-            for user_groups_item in divide_unique_groups_set:
-                composite_unique_groups_set.add(user_groups_item)
+            params_unique_groups_set['user_ids'] = list_to_string(divide_user_item)
+            for group in groups:
+                params_unique_groups_set['group_id'] = group
+                response = requests.post('https://api.vk.com/method/groups.isMember', params_unique_groups_set)
+                time.sleep(0.5)
+                for item in response.json():
+                    if 'error' not in item:
+                        print('проверяем группу {}'.format(group))
+                        for item in response.json()['response']:
+                            if item['member'] == 1:
+                                if group in unique_groups:
+                                    unique_groups.remove(group)
     else:
-        composite_unique_groups_set = unique_groups_set(user_groups, user_friends)
-    return composite_unique_groups_set
+        params_unique_groups_set['user_ids'] = list_to_string(friends)
+        for group in groups:
+            params_unique_groups_set['group_id'] = group
+            # информация о том, является ли пользователь участником сообщества
+            response = requests.post('https://api.vk.com/method/groups.isMember', params_unique_groups_set)
+            time.sleep(0.5)
+            for item in response.json():
+                if 'error' not in item:
+                    print('проверяем группу {}'.format(group))
+                    for item in response.json()['response']:
+                        if item['member'] == 1:
+                            if group in unique_groups:
+                                unique_groups.remove(group)
+    return unique_groups
 
 
 # функция записывает информацию о группах в файл формата json
@@ -128,8 +129,9 @@ def write_groups_to_json(groups):
 
 user_id = 5030613
 # user_id = 'tim_leary'
+# user_id = 171691064
 
 user_groups = groups_list(user_id)
 user_friends = friends_list(user_id)
-user_unique_groups = сheck_friends_number(user_groups, user_friends)
+user_unique_groups = unique_groups_set(user_groups, user_friends)
 write_groups_to_json(user_unique_groups)
